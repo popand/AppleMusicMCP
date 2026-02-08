@@ -14,15 +14,62 @@ An MCP (Model Context Protocol) server that integrates with Apple Music, allowin
 - **View** recently played tracks
 - **Get** personalized recommendations
 
-## Prerequisites
+## Quick Start (Hosted)
+
+The fastest way to get started — no Apple Developer account, no local setup, no environment variables. Just authorize and go.
+
+### 1. Get your Music User Token
+
+Visit **[applemusicmcp.gradientworks.ca/auth](https://applemusicmcp.gradientworks.ca/auth)** and click "Authorize with Apple Music". Sign in with your Apple ID and copy the token shown on the page.
+
+### 2. Add to Claude Desktop
+
+Add this to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, `%APPDATA%\Claude\claude_desktop_config.json` on Windows):
+
+```json
+{
+  "mcpServers": {
+    "apple-music-remote": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://applemusicmcp.gradientworks.ca/mcp",
+        "--header",
+        "Music-User-Token: YOUR_TOKEN_HERE"
+      ]
+    }
+  }
+}
+```
+
+Replace `YOUR_TOKEN_HERE` with the token you copied. Restart Claude Desktop.
+
+### 3. Add to Claude Code
+
+```bash
+claude mcp add apple-music-remote \
+  -- npx -y mcp-remote https://applemusicmcp.gradientworks.ca/mcp \
+  --header "Music-User-Token: YOUR_TOKEN_HERE"
+```
+
+Your Music User Token is valid for approximately **6 months**. When it expires, revisit the auth page to get a new one.
+
+---
+
+## Self-Hosted Setup
+
+If you prefer to run the server yourself, follow the instructions below.
+
+### Prerequisites
 
 - Node.js 18+
 - An [Apple Developer Program](https://developer.apple.com/programs/) membership
 - A MusicKit identifier and private key
 
-## Apple Developer Setup
+### Apple Developer Setup
 
-### 1. Create a MusicKit Identifier
+#### 1. Create a MusicKit Identifier
 
 1. Go to [Apple Developer > Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list)
 2. Click **+** to register a new identifier
@@ -30,7 +77,7 @@ An MCP (Model Context Protocol) server that integrates with Apple Music, allowin
 4. Enter a description (e.g., "MCP Server") and an identifier (e.g., `com.yourname.musicmcp`)
 5. Click **Continue** and **Register**
 
-### 2. Create a MusicKit Private Key
+#### 2. Create a MusicKit Private Key
 
 1. Go to [Apple Developer > Keys](https://developer.apple.com/account/resources/authkeys/list)
 2. Click **+** to create a new key
@@ -40,11 +87,11 @@ An MCP (Model Context Protocol) server that integrates with Apple Music, allowin
 6. **Download the .p8 file** (you can only download it once!)
 7. Note the **Key ID** shown on the page
 
-### 3. Find Your Team ID
+#### 3. Find Your Team ID
 
 Your Team ID is visible at the top right of the Apple Developer portal, or under **Membership Details**.
 
-## Installation
+### Installation
 
 ```bash
 git clone <this-repo>
@@ -53,7 +100,7 @@ npm install
 npm run build
 ```
 
-## Configuration
+### Configuration
 
 The server is configured via environment variables:
 
@@ -66,7 +113,7 @@ The server is configured via environment variables:
 | `APPLE_MUSIC_CONFIG_DIR` | No | Config directory path (default: `~/.apple-music-mcp/`) |
 | `APPLE_MUSIC_AUTH_PORT` | No | Port for auth server (default: `7829`) |
 
-## Authorization
+### Authorization
 
 Before using library features (playlists, library songs, recommendations), you need to authorize with your Apple Music account:
 
@@ -85,7 +132,7 @@ This will:
 
 **Note:** Catalog search works without authorization. Only library/personal features require it.
 
-## Adding to Claude Desktop
+### Adding to Claude Desktop (Local)
 
 Add this to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
@@ -106,7 +153,7 @@ Add this to your Claude Desktop config (`~/Library/Application Support/Claude/cl
 }
 ```
 
-## Adding to Claude Code
+### Adding to Claude Code (Local)
 
 Add to your Claude Code settings (`.claude/settings.json` or global settings):
 
@@ -213,8 +260,10 @@ npm start      # Run compiled version
 
 ## Architecture
 
-- **Transport:** stdio (JSON-RPC over stdin/stdout)
+- **Local mode:** stdio transport (JSON-RPC over stdin/stdout)
+- **Remote mode:** Stateless HTTP on Vercel via `WebStandardStreamableHTTPServerTransport`
 - **API:** Direct REST calls to `api.music.apple.com/v1/`
-- **Auth:** ES256 JWT developer tokens + browser-based MusicKit JS for user tokens
+- **Auth:** ES256 JWT developer tokens (signed with `jose`) + browser-based MusicKit JS for user tokens
+- **Multi-user:** Music User Token passed per-request as a header (no server-side storage)
 - **Caching:** In-memory with per-endpoint TTLs
 - **Error handling:** Typed errors with helpful messages and retry logic for rate limits
