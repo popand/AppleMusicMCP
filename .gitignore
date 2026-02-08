@@ -3,4 +3,5 @@ dist/
 *.p8
 .env
 tokens.json
+.mcp.json
 .DS_Store
