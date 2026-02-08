@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.p8
+.env
+tokens.json
+.DS_Store
