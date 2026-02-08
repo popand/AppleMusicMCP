@@ -5,3 +5,4 @@ dist/
 tokens.json
 .mcp.json
 .DS_Store
+.vercel
