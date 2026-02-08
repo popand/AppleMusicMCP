@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apple Music MCP - Authorize</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .container {
+      text-align: center;
+      max-width: 600px;
+      padding: 40px 24px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      color: #aaa;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    button {
+      background: #fa2d48;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      font-size: 16px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #e0243d; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    .status {
+      margin-top: 20px;
+      color: #aaa;
+      font-size: 14px;
+    }
+    .status.error { color: #ff3b30; }
+    .result { display: none; margin-top: 32px; text-align: left; }
+    .result.visible { display: block; }
+    .result h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #4cd964;
+    }
+    .token-box {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .token-label {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .token-value {
+      font-family: "SF Mono", Monaco, Menlo, monospace;
+      font-size: 12px;
+      word-break: break-all;
+      line-height: 1.5;
+      color: #e0e0e0;
+      user-select: all;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #444;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .copy-btn:hover { background: #555; }
+    .copy-btn.copied { background: #4cd964; color: #000; }
+    .instructions {
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .instructions h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .instructions ol {
+      text-align: left;
+      color: #ccc;
+      font-size: 14px;
+      line-height: 1.8;
+      padding-left: 20px;
+    }
+    .instructions code {
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: "SF Mono", Monaco, Menlo, monospace;
+      font-size: 12px;
+      color: #f0c040;
+    }
+    .config-block {
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 14px;
+      margin: 12px 0;
+      text-align: left;
+      position: relative;
+    }
+    .config-block pre {
+      font-family: "SF Mono", Monaco, Menlo, monospace;
+      font-size: 11px;
+      color: #ccc;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .expiry-note {
+      margin-top: 16px;
+      padding: 12px;
+      background: #2a2200;
+      border: 1px solid #554400;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #f0c040;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="auth-section">
+      <h1>Apple Music MCP Server</h1>
+      <p class="subtitle">Authorize access to your Apple Music library to use the MCP server with Claude Desktop, Claude Code, or any MCP client.</p>
+      <button id="auth-btn" onclick="authorize()">Authorize with Apple Music</button>
+      <div id="status" class="status"></div>
+    </div>
+
+    <div id="result" class="result">
+      <h2>Authorization Successful</h2>
+
+      <div class="token-box">
+        <div class="token-label">Your Music User Token</div>
+        <div id="token-display" class="token-value"></div>
+        <button class="copy-btn" onclick="copyToken(this)">Copy</button>
+      </div>
+
+      <div class="instructions">
+        <h3>Setup Instructions</h3>
+        <ol>
+          <li>Open your <strong>Claude Desktop</strong> config file:<br>
+            <code>~/Library/Application Support/Claude/claude_desktop_config.json</code> (macOS)<br>
+            <code>%APPDATA%\Claude\claude_desktop_config.json</code> (Windows)
+          </li>
+          <li>Add this MCP server entry inside <code>"mcpServers"</code>:</li>
+        </ol>
+        <div class="config-block">
+          <pre id="config-snippet"></pre>
+          <button class="copy-btn" onclick="copyConfig(this)">Copy</button>
+        </div>
+        <ol start="3">
+          <li>Restart Claude Desktop</li>
+          <li>Ask Claude to search for a song or list your playlists to verify</li>
+        </ol>
+      </div>
+
+      <div class="expiry-note">
+        <strong>Token expiry:</strong> Your Music User Token is valid for approximately <strong>6 months</strong>. When it expires, library tools (playlists, recently played, etc.) will return auth errors. Come back to this page to re-authorize and get a new token. Catalog search works without a user token.
+      </div>
+    </div>
+  </div>
+
+  <script src="https://js-cdn.music.apple.com/musickit/v3/musickit.js" data-web-components async></script>
+  <script>
+    var userToken = null;
+
+    document.addEventListener("musickitloaded", async function() {
+      try {
+        var devToken = document.querySelector('meta[name="developer-token"]').content;
+        await MusicKit.configure({
+          developerToken: devToken,
+          app: { name: "Apple Music MCP Server", build: "1.0.0" }
+        });
+      } catch (err) {
+        document.getElementById("status").textContent = "Failed to initialize MusicKit: " + err.message;
+        document.getElementById("status").className = "status error";
+      }
+    });
+
+    async function authorize() {
+      var btn = document.getElementById("auth-btn");
+      var status = document.getElementById("status");
+      btn.disabled = true;
+      status.textContent = "Authorizing...";
+      status.className = "status";
+
+      try {
+        var music = MusicKit.getInstance();
+        userToken = await music.authorize();
+        showResult(userToken);
+      } catch (err) {
+        status.textContent = "Authorization failed: " + err.message;
+        status.className = "status error";
+        btn.disabled = false;
+      }
+    }
+
+    function showResult(token) {
+      document.getElementById("auth-section").style.display = "none";
+      document.getElementById("result").className = "result visible";
+      document.getElementById("token-display").textContent = token;
+
+      var config = {
+        "apple-music-remote": {
+          "command": "npx",
+          "args": [
+            "-y",
+            "mcp-remote",
+            "https://applemusicmcp.gradientworks.ca/mcp",
+            "--header",
+            "Music-User-Token: " + token
+          ]
+        }
+      };
+      document.getElementById("config-snippet").textContent = JSON.stringify(config, null, 2);
+    }
+
+    function copyToken(btn) {
+      navigator.clipboard.writeText(userToken).then(function() {
+        btn.textContent = "Copied!";
+        btn.className = "copy-btn copied";
+        setTimeout(function() {
+          btn.textContent = "Copy";
+          btn.className = "copy-btn";
+        }, 2000);
+      });
+    }
+
+    function copyConfig(btn) {
+      var text = document.getElementById("config-snippet").textContent;
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = "Copied!";
+        btn.className = "copy-btn copied";
+        setTimeout(function() {
+          btn.textContent = "Copy";
+          btn.className = "copy-btn";
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

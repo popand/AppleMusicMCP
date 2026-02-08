@@ -1,0 +1,24 @@
+{
+  "buildCommand": "npm run vercel-build",
+  "outputDirectory": ".",
+  "functions": {
+    "api/mcp.ts": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/mcp", "destination": "/api/mcp" },
+    { "source": "/auth", "destination": "/api/auth" }
+  ],
+  "headers": [
+    {
+      "source": "/mcp",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, mcp-session-id, Last-Event-ID, mcp-protocol-version" },
+        { "key": "Access-Control-Expose-Headers", "value": "mcp-session-id, mcp-protocol-version" }
+      ]
+    }
+  ]
+}

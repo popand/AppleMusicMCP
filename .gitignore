@@ -1,7 +1,8 @@
 node_modules/
 dist/
 *.p8
-.env
+.env*
 tokens.json
 .mcp.json
 .DS_Store
+.vercel
