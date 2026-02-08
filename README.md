@@ -2,6 +2,8 @@
 
 An MCP (Model Context Protocol) server that integrates with Apple Music, allowing Claude and other MCP clients to search the catalog, manage playlists, and access your library.
 
+![Claude creating a Deep Focus Coding playlist on Apple Music](screen_shot.png)
+
 ## Features
 
 - **Search** the Apple Music catalog (songs, albums, artists, playlists)
